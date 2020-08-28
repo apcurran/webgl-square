@@ -1,5 +1,7 @@
 "use strict";
 
+let squareRotation = 0.0;
+
 function main() {
     /** @type {HTMLCanvasElement} */
     const canvas = document.getElementById("canvas");
@@ -53,7 +55,19 @@ function main() {
 
     const buffers = initBuffers(gl);
 
-    drawScene(gl, programInfo, buffers);
+    let then = 0;
+
+    // Draw the scene repeatedly to the gl canvas
+    function render(now) {
+        now *= 0.001; // convert to seconds
+        const deltaTime = now - then;
+        then = now;
+
+        drawScene(gl, programInfo, buffers, deltaTime);
+        requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
 }
 
 function initBuffers(/** @type {WebGL2RenderingContext} */gl) {
@@ -100,7 +114,7 @@ function initBuffers(/** @type {WebGL2RenderingContext} */gl) {
     };
 }
 
-function drawScene(/** @type {WebGL2RenderingContext} */gl, programInfo, buffers) {
+function drawScene(/** @type {WebGL2RenderingContext} */gl, programInfo, buffers, deltaTime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0); // pure black
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -132,6 +146,12 @@ function drawScene(/** @type {WebGL2RenderingContext} */gl, programInfo, buffers
         modelViewMatrix, // matrix to translate
         [-0.0, 0.0, -6.0] // amount to translate
     );
+    mat4.rotate(
+        modelViewMatrix, // destination matrix
+        modelViewMatrix, // matrix to rotate
+        squareRotation,  // amount to rotate in radians
+        [0, 0, 1]        // axis to rotate around
+    )
 
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute
@@ -197,6 +217,9 @@ function drawScene(/** @type {WebGL2RenderingContext} */gl, programInfo, buffers
         
         gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
     }
+
+    // Update the rotation for the next draw
+    squareRotation += deltaTime;
 }
 
 function initShaderProgram(/** @type {WebGL2RenderingContext} */gl, vsSource, fsSource) {
